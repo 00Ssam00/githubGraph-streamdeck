@@ -30,46 +30,75 @@ private async updateDisplay(action: any): Promise<void> {
 	// Enviar la imagen al botón
 	await action.setImage(imageData);
 }
-
-/**
- * Genera una imagen de prueba (cuadrado azul)
+/*
+ * Genera una imagen de heatmap estilo GitHub
  */
 private generateTestImage(): string {
-	// Por ahora, retornamos un SVG simple codificado en base64
-	const svg = `
-	<svg width="144" height="144" xmlns="http://www.w3.org/2000/svg">
-		<!-- Fondo negro -->
-		<rect width="144" height="144" fill="#0d1117"/>
-		<!-- Título -->
-		<text x="72" y="30" 
-			font-family="Arial" 
-			font-size="14" 
-			fill="#c9d1d9" 
-			text-anchor="middle">
-		Week Heatmap
-		</text>
-		<!-- Simulación de 7 cuadrados (7 días) -->
-		<rect x="20" y="50" width="15" height="15" fill="#0e4429" rx="2"/>
-		<rect x="40" y="50" width="15" height="15" fill="#006d32" rx="2"/>
-		<rect x="60" y="50" width="15" height="15" fill="#26a641" rx="2"/>
-		<rect x="80" y="50" width="15" height="15" fill="#39d353" rx="2"/>
-		<rect x="100" y="50" width="15" height="15" fill="#26a641" rx="2"/>
-		<rect x="20" y="70" width="15" height="15" fill="#006d32" rx="2"/>
-		<rect x="40" y="70" width="15" height="15" fill="#0e4429" rx="2"/>
-		<!-- Etiquetas de días -->
-		<text x="27" y="100" font-family="Arial" font-size="8" fill="#8b949e">L</text>
-		<text x="47" y="100" font-family="Arial" font-size="8" fill="#8b949e">M</text>
-		<text x="67" y="100" font-family="Arial" font-size="8" fill="#8b949e">M</text>
-		<text x="87" y="100" font-family="Arial" font-size="8" fill="#8b949e">J</text>
-		<text x="107" y="100" font-family="Arial" font-size="8" fill="#8b949e">V</text>
-		<text x="27" y="115" font-family="Arial" font-size="8" fill="#8b949e">S</text>
-		<text x="47" y="115" font-family="Arial" font-size="8" fill="#8b949e">D</text>
-	</svg>
-	`;
-	// Convertir SVG a base64
-	const base64 = Buffer.from(svg).toString('base64');
+	// Dimensiones fijas del botón Stream Deck
+	const canvasSize = 144;
 
-	// Retornar en formato data URI
-	return `data:image/svg+xml;base64,${base64}`;
+	// Configuración del heatmap
+	const cellSize = 22;      // Tamaño de cada celda (cuadrado)
+	const gap = 4;            // Espacio entre celdas
+	const rows = 2;           // 2 filas
+	const maxCols = 4;        // Máximo de columnas (primera fila)
+
+	// Datos simulados para 7 días distribuidos en 2 filas (4+3)
+	// Valores: 0 = sin commits, 4 = máximos commits
+	const weekData = [
+	[1, 2, 3, 4],           // Primera fila: 4 días (L, M, M, J)
+	[3, 0, 2]               // Segunda fila: 3 días (V, S, D)
+	];
+
+	// Calcular dimensiones de la cuadrícula (basado en la fila más ancha)
+	const gridWidth = maxCols * cellSize + (maxCols - 1) * gap;
+	const gridHeight = rows * cellSize + (rows - 1) * gap;
+
+	// Centrar toda la cuadrícula en el canvas
+	const offsetX = (canvasSize - gridWidth) / 2;
+	const offsetY = (canvasSize - gridHeight) / 2;
+
+	// Paleta de colores GitHub (tema oscuro)
+	const colors: { [key: number]: string } = {
+	0: '#161b22',         // Sin commits
+	1: '#0e4429',         // Nivel bajo
+	2: '#006d32',         // Nivel medio-bajo
+	3: '#26a641',         // Nivel medio-alto
+	4: '#39d353',         // Nivel alto
+	};
+
+	// Construir SVG con dimensiones exactas
+	let svg = `
+	<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
+		<!-- Fondo oscuro -->
+		<rect width="${canvasSize}" height="${canvasSize}" fill="#0d1117"/>
+	`;
+
+	// Generar cada celda del heatmap
+	for (let row = 0; row < rows; row++) {
+	const currentRowData = weekData[row];
+
+	for (let col = 0; col < currentRowData.length; col++) {
+		const value = currentRowData[col];
+		// Calcular posición (todas las filas alineadas a la izquierda)
+		const x = offsetX + col * (cellSize + gap);
+		const y = offsetY + row * (cellSize + gap);
+		const color = colors[value];
+		svg += `
+		<rect
+			x="${x}"
+			y="${y}"
+			width="${cellSize}"
+			height="${cellSize}"
+			fill="${color}"
+			rx="3"
+		/>
+		`;
+	}
+	}
+	svg += `</svg>`;
+	// Convertir a base64
+	const base64 = Buffer.from(svg).toString('base64');
+return `data:image/svg+xml;base64,${base64}`;
 }
 }
