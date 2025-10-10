@@ -1,12 +1,10 @@
-import streamDeck, { LogLevel } from "@elgato/streamdeck";
-
+import streamDeck from "@elgato/streamdeck";
 import { IncrementCounter } from "./actions/increment-counter";
+import { HeatmapWeek } from "./actions/heatmap-week";  // ← AGREGAR
 
-// We can enable "trace" logging so that all messages between the Stream Deck, and the plugin are recorded. When storing sensitive information
-streamDeck.logger.setLevel(LogLevel.TRACE);
-
-// Register the increment action.
+// Registrar acciones
 streamDeck.actions.registerAction(new IncrementCounter());
+streamDeck.actions.registerAction(new HeatmapWeek());  // ← AGREGAR
 
-// Finally, connect to the Stream Deck.
+// Conectar
 streamDeck.connect();

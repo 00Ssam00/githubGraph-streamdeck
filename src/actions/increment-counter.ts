@@ -11,7 +11,7 @@ export class IncrementCounter extends SingletonAction<CounterSettings> {
 	 * we're setting the title to the "count" that is incremented in {@link IncrementCounter.onKeyDown}.
 	 */
 	override onWillAppear(ev: WillAppearEvent<CounterSettings>): void | Promise<void> {
-		return ev.action.setTitle(`${ev.payload.settings.count ?? 0}`);
+		return ev.action.setTitle(`Commits: ${ev.payload.settings.count ?? 0}`);
 	}
 
 	/**
@@ -28,7 +28,7 @@ export class IncrementCounter extends SingletonAction<CounterSettings> {
 
 		// Update the current count in the action's settings, and change the title.
 		await ev.action.setSettings(settings);
-		await ev.action.setTitle(`${settings.count}`);
+		await ev.action.setTitle(`Commits: ${settings.count}`);
 	}
 }
 

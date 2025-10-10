@@ -2,22 +2,29 @@
 	"Name": "Github Graph",
 	"Version": "0.1.0.0",
 	"Author": "Samuel Alvarez",
-	"Actions": [
-		{
+	"UUID": "com.ssam00.githubgraph",
+	"Actions": [{
 			"Name": "Counter",
 			"UUID": "com.ssam00.githubgraph.increment",
 			"Icon": "imgs/actions/counter/icon",
 			"Tooltip": "Displays a count, which increments by one on press.",
 			"PropertyInspectorPath": "ui/increment-counter.html",
-			"Controllers": [
-				"Keypad"
-			],
-			"States": [
-				{
+			"Controllers": ["Keypad"],
+			"States": [{
 					"Image": "imgs/actions/counter/key",
 					"TitleAlignment": "middle"
 				}
 			]
+		},
+		{
+			"Name": "Heatmap Week",
+			"UUID": "com.ssam00.githubgraph.week",
+			"Icon": "imgs/actions/counter/icon",
+			"Tooltip": "Shows your Github commits for the last 7 days",
+			"Controllers": ["Keypad"],
+			"States": [{
+				"Image": "imgs/actions/counter/key"
+			}]
 		}
 	],
 	"Category": "Github Graph",
@@ -42,6 +49,5 @@
 	"Nodejs": {
 		"Version": "20",
 		"Debug": "enabled"
-	},
-	"UUID": "com.ssam00.githubgraph"
+	}
 }
