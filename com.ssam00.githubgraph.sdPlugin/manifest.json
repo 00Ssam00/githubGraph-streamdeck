@@ -21,6 +21,7 @@
 			"UUID": "com.ssam00.githubgraph.week",
 			"Icon": "imgs/actions/counter/icon",
 			"Tooltip": "Shows your Github commits for the last 7 days",
+			"PropertyInspectorPath": "ui/heatmap-week.html",
 			"Controllers": ["Keypad"],
 			"States": [{
 				"Image": "imgs/actions/counter/key"
