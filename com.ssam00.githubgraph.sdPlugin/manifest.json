@@ -26,6 +26,17 @@
 			"States": [{
 				"Image": "imgs/actions/counter/key"
 			}]
+		},
+		{
+			"Name": "Heatmap Month",
+			"UUID": "com.ssam00.githubgraph.month",
+			"Icon": "imgs/actions/counter/icon",
+			"Tooltip": "Shows your Github commits for the last 30 days",
+			"PropertyInspectorPath": "ui/heatmap-month.html",
+			"Controllers": ["Keypad"],
+			"States": [{
+				"Image": "imgs/actions/counter/key"
+			}]
 		}
 	],
 	"Category": "Github Graph",
