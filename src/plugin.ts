@@ -1,10 +1,8 @@
 import streamDeck from "@elgato/streamdeck";
 import { IncrementCounter } from "./actions/increment-counter";
-import { HeatmapWeek } from "./actions/heatmap-week";  // ← AGREGAR
+import { HeatmapWeek } from "./actions/heatmap-week";
 
-// Registrar acciones
 streamDeck.actions.registerAction(new IncrementCounter());
-streamDeck.actions.registerAction(new HeatmapWeek());  // ← AGREGAR
+streamDeck.actions.registerAction(new HeatmapWeek());
 
-// Conectar
 streamDeck.connect();

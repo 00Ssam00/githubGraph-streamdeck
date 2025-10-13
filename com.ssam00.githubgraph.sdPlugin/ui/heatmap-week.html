@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>com.ssam00.githubgraph.week</title>
+    <link rel="stylesheet" href="sdpi.css">
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #2d2d2d;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 18px;
+        }
+
+        .sdpi-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sdpi-item {
+            background: #383838;
+            border-radius: 10px;
+            padding: 10px 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .sdpi-item-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #ddd;
+            margin-bottom: 8px;
+        }
+
+        .info-box {
+            background: #252525;
+            border-left: 3px solid #4A90E2;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #bdbdbd;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="sdpi-wrapper">
+        <!-- Información -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">GitHub Commit Heatmap</div>
+            <div class="info-box">
+                📊 Muestra tus commits de GitHub de los últimos 7 días.<br><br>
+                🔄 Los datos se actualizan automáticamente de GitHub.<br><br>
+                🖱️ Presiona el botón para refrescar manualmente.
+            </div>
+        </div>
+
+        <!-- Nota técnica -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Zona Horaria</div>
+            <div class="info-box">
+                ⏰ Los datos se muestran en zona horaria de Colombia (UTC-5).<br>
+                Los días se cuentan desde las 00:00 hasta las 23:59 hora de Bogotá.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

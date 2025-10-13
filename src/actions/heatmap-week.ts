@@ -1,75 +1,116 @@
-import streamDeck, { action, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, {
+    action,
+    KeyDownEvent,
+    SingletonAction,
+    WillAppearEvent
+} from "@elgato/streamdeck";
+import { GitHubService } from "../services/github-service";
+import { Config } from "../config";
+import { Themes } from "../config/themes";
 
 @action({ UUID: "com.ssam00.githubgraph.week" })
 export class HeatmapWeek extends SingletonAction {
+    private githubService: GitHubService;
 
-/**
- * Se ejecuta cuando el botón aparece en Stream Deck
- */
-override async onWillAppear(ev: WillAppearEvent): Promise<void> {
-	// Por ahora, mostrar una imagen de prueba
-	await this.updateDisplay(ev.action);
-}
+    constructor() {
+        super();
+        const GITHUB_TOKEN = Config.githubToken;
+        if (!GITHUB_TOKEN || GITHUB_TOKEN === "TU_TOKEN_AQUI") {
+            console.error("⚠️ GITHUB_TOKEN no configurado");
+        }
+        this.githubService = new GitHubService(GITHUB_TOKEN);
+    }
 
-/**
- * Se ejecuta cuando presionas el botón
- */
-override async onKeyDown(ev: KeyDownEvent): Promise<void> {
-	// Mostrar feedback visual
-	await ev.action.showOk();
-	// Actualizar la imagen (por ahora, la misma)
-	await this.updateDisplay(ev.action);
-}
+    override async onWillAppear(ev: WillAppearEvent): Promise<void> {
+        try {
+            const weekData = await this.githubService.getLastWeekCommits();
+            await this.updateDisplay(ev.action, weekData);
+        } catch (error) {
+            console.error("❌ Error en onWillAppear:", error);
+        }
+    }
 
-/**
- * Método para actualizar la imagen del botón
- */
-private async updateDisplay(action: any): Promise<void> {
-	// Generar una imagen simple de prueba
-	const imageData = this.generateTestImage();
-	// Enviar la imagen al botón
-	await action.setImage(imageData);
-}
+    override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+        try {
+            const weekData = await this.githubService.getLastWeekCommits();
+            await this.updateDisplay(ev.action, weekData);
+        } catch (error) {
+            console.error("❌ Error en onKeyDown:", error);
+        }
+    }
 
-/**
- * Genera una imagen de prueba (cuadrado azul)
- */
-private generateTestImage(): string {
-	// Por ahora, retornamos un SVG simple codificado en base64
-	const svg = `
-	<svg width="144" height="144" xmlns="http://www.w3.org/2000/svg">
-		<!-- Fondo negro -->
-		<rect width="144" height="144" fill="#0d1117"/>
-		<!-- Título -->
-		<text x="72" y="30" 
-			font-family="Arial" 
-			font-size="14" 
-			fill="#c9d1d9" 
-			text-anchor="middle">
-		Week Heatmap
-		</text>
-		<!-- Simulación de 7 cuadrados (7 días) -->
-		<rect x="20" y="50" width="15" height="15" fill="#0e4429" rx="2"/>
-		<rect x="40" y="50" width="15" height="15" fill="#006d32" rx="2"/>
-		<rect x="60" y="50" width="15" height="15" fill="#26a641" rx="2"/>
-		<rect x="80" y="50" width="15" height="15" fill="#39d353" rx="2"/>
-		<rect x="100" y="50" width="15" height="15" fill="#26a641" rx="2"/>
-		<rect x="20" y="70" width="15" height="15" fill="#006d32" rx="2"/>
-		<rect x="40" y="70" width="15" height="15" fill="#0e4429" rx="2"/>
-		<!-- Etiquetas de días -->
-		<text x="27" y="100" font-family="Arial" font-size="8" fill="#8b949e">L</text>
-		<text x="47" y="100" font-family="Arial" font-size="8" fill="#8b949e">M</text>
-		<text x="67" y="100" font-family="Arial" font-size="8" fill="#8b949e">M</text>
-		<text x="87" y="100" font-family="Arial" font-size="8" fill="#8b949e">J</text>
-		<text x="107" y="100" font-family="Arial" font-size="8" fill="#8b949e">V</text>
-		<text x="27" y="115" font-family="Arial" font-size="8" fill="#8b949e">S</text>
-		<text x="47" y="115" font-family="Arial" font-size="8" fill="#8b949e">D</text>
-	</svg>
-	`;
-	// Convertir SVG a base64
-	const base64 = Buffer.from(svg).toString('base64');
+    private getColorLevel(commits: number): number {
+        if (commits === 0) return 0;
+        if (commits <= 2) return 1;
+        if (commits <= 4) return 2;
+        if (commits <= 7) return 3;
+        return 4;
+    }
 
-	// Retornar en formato data URI
-	return `data:image/svg+xml;base64,${base64}`;
-}
+    private async updateDisplay(action: any, weekData: number[]): Promise<void> {
+        const imageData = this.generateHeatmapImage(weekData);
+        await action.setImage(imageData);
+    }
+
+    private generateHeatmapImage(weekData: number[]): string {
+        const canvasSize = 144;
+        const cellSize = 22;
+        const gap = 4;
+        const rows = 2;
+        const maxCols = 4;
+
+        const row1Data = weekData.slice(0, 4);
+        const row2Data = weekData.slice(4, 7);
+        const gridData = [row1Data, row2Data];
+
+        const gridWidth = maxCols * cellSize + (maxCols - 1) * gap;
+        const gridHeight = rows * cellSize + (rows - 1) * gap;
+
+        const offsetX = (canvasSize - gridWidth) / 2;
+        const offsetY = (canvasSize - gridHeight) / 2;
+
+        // Tema oscuro fijo
+        const colors = Themes['dark'];
+
+        const colorMap: { [key: number]: string } = {
+            0: colors.level0,
+            1: colors.level1,
+            2: colors.level2,
+            3: colors.level3,
+            4: colors.level4,
+        };
+
+        let svg = `
+            <svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
+                <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}"/>
+        `;
+
+        for (let row = 0; row < rows; row++) {
+            const currentRowData = gridData[row];
+
+            for (let col = 0; col < currentRowData.length; col++) {
+                const commits = currentRowData[col];
+                const colorLevel = this.getColorLevel(commits);
+
+                const x = offsetX + col * (cellSize + gap);
+                const y = offsetY + row * (cellSize + gap);
+                const color = colorMap[colorLevel];
+
+                svg += `
+                    <rect
+                        x="${x}"
+                        y="${y}"
+                        width="${cellSize}"
+                        height="${cellSize}"
+                        fill="${color}"
+                        rx="3"
+                    />
+                `;
+            }
+        }
+
+        svg += `</svg>`;
+        const base64 = Buffer.from(svg).toString('base64');
+        return `data:image/svg+xml;base64,${base64}`;
+    }
 }
