@@ -34,7 +34,6 @@ export class HeatmapWeek extends SingletonAction {
         try {
             const weekData = await this.githubService.getLastWeekCommits();
             await this.updateDisplay(ev.action, weekData);
-            await ev.action.showOk();
         } catch (error) {
             console.error("❌ Error en onKeyDown:", error);
         }
