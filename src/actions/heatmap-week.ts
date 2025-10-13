@@ -2,7 +2,8 @@ import streamDeck, {
     action,
     KeyDownEvent,
     SingletonAction,
-    WillAppearEvent
+    WillAppearEvent,
+    WillDisappearEvent
 } from "@elgato/streamdeck";
 import { GitHubService } from "../services/github-service";
 import { Config } from "../config";
@@ -11,7 +12,8 @@ import { Themes } from "../config/themes";
 @action({ UUID: "com.ssam00.githubgraph.week" })
 export class HeatmapWeek extends SingletonAction {
     private githubService: GitHubService;
-
+    private updateInterval: NodeJS.Timeout | null = null;
+    private readonly UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
     constructor() {
         super();
         const GITHUB_TOKEN = Config.githubToken;
@@ -22,23 +24,66 @@ export class HeatmapWeek extends SingletonAction {
     }
 
     override async onWillAppear(ev: WillAppearEvent): Promise<void> {
+        console.log("🟢 HeatmapWeek: Botón apareció");
         try {
-            const weekData = await this.githubService.getLastWeekCommits();
-            await this.updateDisplay(ev.action, weekData);
+            // Actualizar inmediatamente al aparecer
+            await this.fetchAndUpdate(ev.action);
+            // Iniciar actualización automática
+            this.startAutoUpdate(ev.action);
         } catch (error) {
             console.error("❌ Error en onWillAppear:", error);
         }
     }
-
+    override async onWillDisappear(ev: WillDisappearEvent): Promise<void> {
+        console.log("🔴 HeatmapWeek: Botón desapareció");
+        // Detener actualización automática
+        this.stopAutoUpdate();
+    }
     override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+        console.log("🔵 HeatmapWeek: Botón presionado (actualización manual)");
         try {
-            const weekData = await this.githubService.getLastWeekCommits();
-            await this.updateDisplay(ev.action, weekData);
+            // Actualizar manualmente
+            await this.fetchAndUpdate(ev.action);
         } catch (error) {
             console.error("❌ Error en onKeyDown:", error);
+            await ev.action.showAlert();
         }
     }
 
+    /**
+     * Inicia la actualización automática periódica
+     */
+    private startAutoUpdate(action: any): void {
+        // Limpiar intervalo anterior si existe
+        this.stopAutoUpdate();
+        console.log(`⏰ Iniciando actualización automática cada ${this.UPDATE_INTERVAL_MS / 60000} minutos`);
+        this.updateInterval = setInterval(async () => {
+            console.log("🔄 Actualización automática ejecutándose...");
+            try {
+                await this.fetchAndUpdate(action);
+                console.log("✅ Actualización automática completada");
+            } catch (error) {
+                console.error("❌ Error en actualización automática:", error);
+            }
+        }, this.UPDATE_INTERVAL_MS);
+    }
+    /**
+     * Detiene la actualización automática
+     */
+    private stopAutoUpdate(): void {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+            console.log("⏹️ Actualización automática detenida");
+        }
+    }
+    /**
+     * Obtiene datos de GitHub y actualiza el display
+     */
+    private async fetchAndUpdate(action: any): Promise<void> {
+        const weekData = await this.githubService.getLastWeekCommits();
+        await this.updateDisplay(action, weekData);
+    }
     private getColorLevel(commits: number): number {
         if (commits === 0) return 0;
         if (commits <= 2) return 1;
