@@ -47,10 +47,47 @@
             color: #9b59b6;
             font-weight: 600;
         }
+        /* Estilos para el selector de tema */
+        select {
+            width: 100%;
+            background: #252525;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #f0f0f0;
+            padding: 8px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:hover {
+            background: #2e2e2e;
+            border-color: #9b59b6;
+        }
+
+        select:focus {
+            border-color: #9b59b6;
+            box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+        }
+
+        .info-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body>
     <div class="sdpi-wrapper">
+        <!-- Selector de Tema -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">🎨 Tema del Heatmap</div>
+            <select id="themeSelect">
+                <option value="dark">Oscuro (GitHub Dark)</option>
+                <option value="light">Claro (GitHub Light)</option>
+            </select>
+            <div class="info-text" id="themeInfo">Selecciona el esquema de colores</div>
+        </div>
         <!-- Información -->
         <div class="sdpi-item">
             <div class="sdpi-item-label">GitHub Commit Heatmap - 30 Días</div>
@@ -80,5 +117,43 @@
             </div>
         </div>
     </div>
+    <script>
+        const themeSelect = document.getElementById('themeSelect');
+        const themeInfo = document.getElementById('themeInfo');
+        let websocket = null;
+        let uuid = null;
+        window.connectElgatoStreamDeckSocket = (inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) => {
+            console.log("🎨 Property Inspector conectado");
+            uuid = inPropertyInspectorUUID;
+            const actionInfo = JSON.parse(inActionInfo);
+            const settings = actionInfo.payload.settings || {};
+            themeSelect.value = settings.theme || 'dark';
+            console.log("📝 Tema inicial:", themeSelect.value);
+            websocket = new WebSocket('ws://127.0.0.1:' + inPort);
+            websocket.onopen = () => {
+                const registerPI = { event: inRegisterEvent, uuid: inPropertyInspectorUUID };
+                websocket.send(JSON.stringify(registerPI));
+                console.log("✅ WebSocket conectado");
+            };
+        };
+        themeSelect.addEventListener('change', () => {
+            if (websocket && websocket.readyState === 1) {
+                const newTheme = themeSelect.value;
+                console.log("🔄 Enviando tema:", newTheme);
+                const setSettings = { event: 'setSettings', context: uuid, payload: { theme: newTheme } };
+                websocket.send(JSON.stringify(setSettings));
+                const originalText = themeInfo.textContent;
+                const originalColor = themeInfo.style.color;
+                themeInfo.textContent = '✅ Tema actualizado correctamente';
+                themeInfo.style.color = '#9b59b6';
+                setTimeout(() => {
+                    themeInfo.textContent = originalText;
+                    themeInfo.style.color = originalColor;
+                }, 2000);
+            } else {
+                console.error("❌ WebSocket no está conectado");
+            }
+        });
+    </script>
 </body>
 </html>
