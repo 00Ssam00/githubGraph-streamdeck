@@ -3,14 +3,16 @@ import streamDeck, {
     KeyDownEvent,
     SingletonAction,
     WillAppearEvent,
-    WillDisappearEvent
+    WillDisappearEvent,
+    DidReceiveSettingsEvent
 } from "@elgato/streamdeck";
 import { GitHubService } from "../services/github-service";
 import { Config } from "../config";
 import { Themes } from "../config/themes";
+import { HeatmapSettings, defaultSettings } from "../types/settings";
 
 @action({ UUID: "com.ssam00.githubgraph.week" })
-export class HeatmapWeek extends SingletonAction {
+    export class HeatmapWeek extends SingletonAction<HeatmapSettings> {
     private githubService: GitHubService;
     private updateInterval: NodeJS.Timeout | null = null;
     private readonly UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
@@ -22,28 +24,32 @@ export class HeatmapWeek extends SingletonAction {
         }
         this.githubService = new GitHubService(GITHUB_TOKEN);
     }
-
-    override async onWillAppear(ev: WillAppearEvent): Promise<void> {
+    override async onWillAppear(ev: WillAppearEvent<HeatmapSettings>): Promise<void> {
         console.log("🟢 HeatmapWeek: Botón apareció");
+        // Inicializar settings si no existen
+        const settings = ev.payload.settings;
+        if (!settings.theme) {
+            await ev.action.setSettings(defaultSettings);
+            console.log("⚙️ Settings inicializados con tema por defecto:", defaultSettings.theme);
+        }
         try {
-            // Actualizar inmediatamente al aparecer
-            await this.fetchAndUpdate(ev.action);
-            // Iniciar actualización automática
+            await this.fetchAndUpdate(ev.action, settings.theme || defaultSettings.theme);
             this.startAutoUpdate(ev.action);
         } catch (error) {
             console.error("❌ Error en onWillAppear:", error);
         }
     }
-    override async onWillDisappear(ev: WillDisappearEvent): Promise<void> {
+    override async onWillDisappear(ev: WillDisappearEvent<HeatmapSettings>): Promise<void> {
         console.log("🔴 HeatmapWeek: Botón desapareció");
         // Detener actualización automática
         this.stopAutoUpdate();
     }
-    override async onKeyDown(ev: KeyDownEvent): Promise<void> {
+    override async onKeyDown(ev: KeyDownEvent<HeatmapSettings>): Promise<void> {
         console.log("🔵 HeatmapWeek: Botón presionado (actualización manual)");
         try {
+            const theme = ev.payload.settings.theme || defaultSettings.theme;
             // Actualizar manualmente
-            await this.fetchAndUpdate(ev.action);
+            await this.fetchAndUpdate(ev.action, theme);
         } catch (error) {
             console.error("❌ Error en onKeyDown:", error);
             await ev.action.showAlert();
@@ -51,8 +57,20 @@ export class HeatmapWeek extends SingletonAction {
     }
 
     /**
-     * Inicia la actualización automática periódica
+     * Se ejecuta cuando cambian los settings desde el Property Inspector
      */
+    override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<HeatmapSettings>): Promise<void> {
+        const newTheme = ev.payload.settings.theme || defaultSettings.theme;
+        console.log("🎨 Settings actualizados - Aplicando cambios automáticamente");
+        console.log("📝 Nuevo tema:", newTheme);
+        try {
+        await this.fetchAndUpdate(ev.action, newTheme);
+        console.log("✅ Tema aplicado correctamente");
+        } catch (error) {
+        console.error("❌ Error al aplicar nuevo tema:", error);
+        }
+    }
+
     private startAutoUpdate(action: any): void {
         // Limpiar intervalo anterior si existe
         this.stopAutoUpdate();
@@ -60,7 +78,9 @@ export class HeatmapWeek extends SingletonAction {
         this.updateInterval = setInterval(async () => {
             console.log("🔄 Actualización automática ejecutándose...");
             try {
-                await this.fetchAndUpdate(action);
+                const settings = await action.getSettings();
+                const theme = settings.theme || defaultSettings.theme;
+                await this.fetchAndUpdate(action, theme);
                 console.log("✅ Actualización automática completada");
             } catch (error) {
                 console.error("❌ Error en actualización automática:", error);
@@ -77,12 +97,9 @@ export class HeatmapWeek extends SingletonAction {
             console.log("⏹️ Actualización automática detenida");
         }
     }
-    /**
-     * Obtiene datos de GitHub y actualiza el display
-     */
-    private async fetchAndUpdate(action: any): Promise<void> {
+    private async fetchAndUpdate(action: any, theme: 'dark' | 'light'): Promise<void> {
         const weekData = await this.githubService.getLastWeekCommits();
-        await this.updateDisplay(action, weekData);
+        await this.updateDisplay(action, weekData, theme);
     }
     private getColorLevel(commits: number): number {
         if (commits === 0) return 0;
@@ -92,12 +109,12 @@ export class HeatmapWeek extends SingletonAction {
         return 4;
     }
 
-    private async updateDisplay(action: any, weekData: number[]): Promise<void> {
-        const imageData = this.generateHeatmapImage(weekData);
+    private async updateDisplay(action: any, weekData: number[], theme: 'dark' | 'light'): Promise<void> {
+        const imageData = this.generateHeatmapImage(weekData, theme);
         await action.setImage(imageData);
     }
 
-    private generateHeatmapImage(weekData: number[]): string {
+    private generateHeatmapImage(weekData: number[], theme: 'dark' | 'light'): string {
         const canvasSize = 144;
         const cellSize = 22;
         const gap = 4;
@@ -114,21 +131,20 @@ export class HeatmapWeek extends SingletonAction {
         const offsetX = (canvasSize - gridWidth) / 2;
         const offsetY = (canvasSize - gridHeight) / 2;
 
-        // Tema oscuro fijo
-        const colors = Themes['dark'];
+        // Usar tema seleccionado por el usuario
+        const colors = Themes[theme];
+        console.log(`🎨 Generando heatmap con tema: ${theme}`);
 
         const colorMap: { [key: number]: string } = {
-            0: colors.level0,
-            1: colors.level1,
-            2: colors.level2,
-            3: colors.level3,
-            4: colors.level4,
+        0: colors.level0,
+        1: colors.level1,
+        2: colors.level2,
+        3: colors.level3,
+        4: colors.level4,
         };
 
-        let svg = `
-            <svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
-                <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}"/>
-        `;
+        let svg = `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}" rx="8"/>`;
 
         for (let row = 0; row < rows; row++) {
             const currentRowData = gridData[row];
