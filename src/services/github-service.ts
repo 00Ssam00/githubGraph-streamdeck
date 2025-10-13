@@ -13,10 +13,24 @@ export class GitHubService {
 
     // 🔧 Ajuste de zona horaria: convierte fecha UTC a hora local de Bogotá (UTC-5)
     private adjustToBogotaDate(dateString: string): string {
+        // Si es solo una fecha (YYYY-MM-DD), ya está en el formato correcto
+        // porque GitHub devuelve las fechas de contribución en la zona local del usuario
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            console.log(`🔄 Fecha ya procesada: ${dateString} (Colombia)`);
+            return dateString;
+        }
+        // Si tiene hora (ISO 8601), convertir de UTC a Colombia
         const date = new Date(dateString);
-        const colombiaOffset = -5 * 60; // minutos (UTC-5)
-        const localTime = new Date(date.getTime() + (colombiaOffset + date.getTimezoneOffset()) * 60000);
-        return localTime.toISOString().split("T")[0]; // YYYY-MM-DD local
+        // Convertir a milisegundos en zona horaria de Colombia (UTC-5)
+        const COLOMBIA_OFFSET_MS = -5 * 60 * 60 * 1000;
+        const colombiaTime = new Date(date.getTime() + COLOMBIA_OFFSET_MS);
+        // Extraer año, mes, día en Colombia
+        const year = colombiaTime.getUTCFullYear();
+        const month = String(colombiaTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(colombiaTime.getUTCDate()).padStart(2, '0');
+        const localDateKey = `${year}-${month}-${day}`;
+        console.log(`🔄 Conversión: ${dateString} (UTC) -> ${localDateKey} (Colombia)`);
+        return localDateKey;
     }
 
     // Obtiene los commits de los últimos 7 días
