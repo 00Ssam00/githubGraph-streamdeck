@@ -42,6 +42,11 @@
             color: #bdbdbd;
             line-height: 1.5;
         }
+
+        .highlight {
+            color: #4A90E2;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -51,17 +56,27 @@
             <div class="sdpi-item-label">GitHub Commit Heatmap</div>
             <div class="info-box">
                 📊 Muestra tus commits de GitHub de los últimos 7 días.<br><br>
-                🔄 Los datos se actualizan automáticamente de GitHub.<br><br>
+                🔄 <span class="highlight">Actualización automática cada 15 minutos.</span><br><br>
                 🖱️ Presiona el botón para refrescar manualmente.
             </div>
         </div>
 
-        <!-- Nota técnica -->
+        <!-- Zona Horaria -->
         <div class="sdpi-item">
             <div class="sdpi-item-label">Zona Horaria</div>
             <div class="info-box">
                 ⏰ Los datos se muestran en zona horaria de Colombia (UTC-5).<br>
                 Los días se cuentan desde las 00:00 hasta las 23:59 hora de Bogotá.
+            </div>
+        </div>
+
+        <!-- Funcionamiento -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Funcionamiento</div>
+            <div class="info-box">
+                🟢 <strong>Al agregar el botón:</strong> Se actualiza inmediatamente.<br><br>
+                ⏱️ <strong>Cada 15 minutos:</strong> Refresca los datos automáticamente.<br><br>
+                🔴 <strong>Al quitar el botón:</strong> Detiene las actualizaciones automáticas.
             </div>
         </div>
     </div>

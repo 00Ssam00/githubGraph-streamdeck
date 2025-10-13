@@ -51,8 +51,8 @@ export class GitHubService {
         const toDate = toDateUTC.toISOString();
 
         console.log("📅 Rango solicitado (Colombia):");
-        console.log("  Desde:", startDate.toLocaleString('es-CO'), "(00:00)");
-        console.log("  Hasta:", endDate.toLocaleString('es-CO'), "(AHORA)");
+        console.log(`  Desde: ${startDate.toLocaleString('es-CO')} (00:00)`);
+        console.log(`  Hasta: ${endDate.toLocaleString('es-CO')} (AHORA)`);
         console.log("📅 Rango enviado a API (UTC):");
         console.log("  Desde:", fromDate);
         console.log("  Hasta:", toDate);
