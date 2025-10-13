@@ -102,6 +102,110 @@ export class GitHubService {
         }
     }
 
+    /**
+     * Obtiene los commits de los últimos 30 días
+     */
+    async getLastMonthCommits(): Promise<number[]> {
+        console.log("🌐 GitHubService: Iniciando petición a API (30 días)");
+        const COLOMBIA_OFFSET_HOURS = -5;
+        const nowUTC = new Date();
+        const nowColombia = new Date(nowUTC.getTime() + COLOMBIA_OFFSET_HOURS * 60 * 60 * 1000);
+        console.log("🕐 Hora actual Colombia:", nowColombia.toISOString());
+
+        const startOfToday = new Date(nowColombia);
+        startOfToday.setHours(0, 0, 0, 0);
+
+        // Inicio hace 29 días (para tener 30 días: hoy + 29 anteriores)
+        const startDate = new Date(startOfToday);
+        startDate.setDate(startDate.getDate() - 29);
+
+        const endDate = nowColombia;
+
+        // Convertir a UTC para la API
+        const fromDateUTC = new Date(startDate.getTime() - COLOMBIA_OFFSET_HOURS * 60 * 60 * 1000);
+        const toDateUTC = new Date(endDate.getTime() - COLOMBIA_OFFSET_HOURS * 60 * 60 * 1000);
+
+        const fromDate = fromDateUTC.toISOString();
+        const toDate = toDateUTC.toISOString();
+
+        console.log("📅 Rango (30 días):");
+        console.log("  Desde:", startDate.toLocaleString('es-CO'));
+        console.log("  Hasta:", endDate.toLocaleString('es-CO'));
+
+        const query = `
+            query {
+                viewer {
+                    contributionsCollection(from: "${fromDate}", to: "${toDate}") {
+                        contributionCalendar {
+                            weeks {
+                                contributionDays {
+                                    date
+                                    contributionCount
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+        try {
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${this.token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ query }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("❌ GitHub API error:", response.status, errorText);
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+
+            const data = await response.json() as GitHubResponse;
+            const extractedData = this.extractLastThirtyDays(data, startDate, endDate);
+
+            console.log("✅ Datos de commits (30 días):", extractedData);
+            console.log("📊 Total commits:", extractedData.reduce((a, b) => a + b, 0));
+
+            return extractedData;
+        } catch (error) {
+            console.error("❌ Error fetching GitHub data:", error);
+            // Retornar array vacío de 30 días
+            return Array(30).fill(0);
+        }
+    }
+
+    /**
+     * Extrae los últimos 30 días de la respuesta
+     */
+    private extractLastThirtyDays(response: GitHubResponse, startDateColombia: Date, endDateColombia: Date): number[] {
+        const calendar = response.data.viewer.contributionsCollection.contributionCalendar;
+        const allDays: GitHubContributionDay[] = [];
+        calendar.weeks.forEach(week => {
+            allDays.push(...week.contributionDays);
+        });
+        // Construir mapa: fecha local (YYYY-MM-DD Bogotá) -> commits
+        const mapByLocalDate: Record<string, number> = {};
+        allDays.forEach(day => {
+            const localKey = this.adjustToBogotaDate(day.date);
+            mapByLocalDate[localKey] = (mapByLocalDate[localKey] || 0) + day.contributionCount;
+        });
+        // Generar array de 30 días
+        const result: number[] = [];
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(startDateColombia);
+            d.setDate(startDateColombia.getDate() + i);
+            const key = this.adjustToBogotaDate(d.toISOString());
+            const count = mapByLocalDate[key] || 0;
+            result.push(count);
+        }
+        return result;
+    }
+
     // Extrae los últimos 7 días de la respuesta (corrige el desfase de día)
     private extractLastSevenDays(response: GitHubResponse, startDateColombia: Date, endDateColombia: Date): number[] {
         const calendar = response.data.viewer.contributionsCollection.contributionCalendar;
