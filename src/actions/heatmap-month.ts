@@ -45,7 +45,7 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
         console.log("🔴 HeatmapMonth: Botón desapareció");
         this.stopAutoUpdate();
     }
-        override async onKeyDown(ev: KeyDownEvent<HeatmapSettings>): Promise<void> {
+    override async onKeyDown(ev: KeyDownEvent<HeatmapSettings>): Promise<void> {
         console.log("🔵 HeatmapMonth: Botón presionado");
 
         try {
@@ -99,24 +99,18 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
         await this.updateDisplay(action, monthData, theme);
     }
 
-    /**
-     * Calcula el nivel de color basado en el número de commits,
-     * relativo al máximo de commits en el periodo (estilo GitHub)
-     */
-    private getColorLevel(commits: number, maxCommits: number): number {
+    // Color level estilo GitHub (basado en el máximo de commits)
+    private getGitHubColorLevel(commits: number, maxCommits: number): number {
         if (commits === 0) return 0;
-        if (maxCommits === 0) return 0;
-        
-        // Calcular el nivel de color de 1 a 4 basado en cuartiles
-        const ratio = commits / maxCommits;
-        if (ratio <= 0.25) return 1;
-        if (ratio <= 0.50) return 2;
-        if (ratio <= 0.75) return 3;
+        if (commits <= Math.ceil(maxCommits * 0.25)) return 1;
+        if (commits <= Math.ceil(maxCommits * 0.5)) return 2;
+        if (commits <= Math.ceil(maxCommits * 0.75)) return 3;
         return 4;
     }
+
     private async updateDisplay(action: any, monthData: number[], theme: 'dark' | 'light'): Promise<void> {
-            const imageData = this.generateHeatmapImage(monthData, theme);
-            await action.setImage(imageData);
+        const imageData = this.generateHeatmapImage(monthData, theme);
+        await action.setImage(imageData);
     }
 
     private generateHeatmapImage(monthData: number[], theme: 'dark' | 'light'): string {
@@ -131,13 +125,9 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
 
         const offsetX = (canvasSize - gridWidth) / 2;
         const offsetY = (canvasSize - gridHeight) / 2;
-        
-        // Calcular el máximo de commits en el periodo
-        const maxCommits = Math.max(...monthData);
-        
         // Usar tema seleccionado por el usuario
         const colors = Themes[theme];
-        console.log(`🎨 Generando heatmap con tema: ${theme} (max commits: ${maxCommits})`);
+        console.log(`🎨 Generando heatmap con tema: ${theme}`);
         const colorMap: { [key: number]: string } = {
             0: colors.level0,
             1: colors.level1,
@@ -145,6 +135,9 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
             3: colors.level3,
             4: colors.level4,
         };
+
+        const maxCommits = Math.max(...monthData);
+
         let svg = `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
             <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}" rx="8"/>`;
         for (let row = 0; row < rows; row++) {
@@ -152,7 +145,7 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
                 const index = row * cols + col;
                 if (index < monthData.length) {
                     const commits = monthData[index];
-                    const colorLevel = this.getColorLevel(commits, maxCommits);
+                    const colorLevel = this.getGitHubColorLevel(commits, maxCommits);
                     const x = offsetX + col * (cellSize + gap);
                     const y = offsetY + row * (cellSize + gap);
                     const color = colorMap[colorLevel];
