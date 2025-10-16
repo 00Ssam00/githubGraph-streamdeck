@@ -14,8 +14,9 @@ export interface ThemeColors {
 export const Themes: Record<'dark' | 'light', ThemeColors> = {
     dark: {
         // Paleta de colores oficial de GitHub contribution heatmap (dark)
+        // El background fue editado para mejor visualizacion y contraste
         // Referencia: https://github.com/primer/primitives/blob/main/data/colors/darkColors.json
-        background: "#161b22",
+        background: "#0d1117",
         level0: "#161b22", // 0 commits (background)
         level1: "#0e4429", // 1er nivel (verde muy oscuro)
         level2: "#006d32", // 2do nivel (verde oscuro)
