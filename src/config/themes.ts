@@ -14,18 +14,18 @@ export interface ThemeColors {
 export const Themes: Record<'dark' | 'light', ThemeColors> = {
     dark: {
         background: '#0d1117',
-        level0: '#151b23',
-        level1: '#033a16',
-        level2: '#196c2e',
-        level3: '#2ea043',
-        level4: '#56d364',
+        level0: '#161b22',
+        level1: '#0e4429',
+        level2: '#006d32',
+        level3: '#26a641',
+        level4: '#39d353',
     },
     light: {
         background: '#ffffff',
-        level0: '#e5ebf1',
-        level1: '#aceebb',
-        level2: '#4ac26b',
-        level3: '#2da44e',
-        level4: '#116329',
+        level0: '#ebedf0',
+        level1: '#9be9a8',
+        level2: '#40c463',
+        level3: '#30a14e',
+        level4: '#216e39',
     }
 };

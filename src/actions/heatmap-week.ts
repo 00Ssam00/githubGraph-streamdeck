@@ -101,11 +101,19 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
         const weekData = await this.githubService.getLastWeekCommits();
         await this.updateDisplay(action, weekData, theme);
     }
-    private getColorLevel(commits: number): number {
+    /**
+     * Calcula el nivel de color basado en el número de commits,
+     * relativo al máximo de commits en el periodo (estilo GitHub)
+     */
+    private getColorLevel(commits: number, maxCommits: number): number {
         if (commits === 0) return 0;
-        if (commits <= 2) return 1;
-        if (commits <= 4) return 2;
-        if (commits <= 7) return 3;
+        if (maxCommits === 0) return 0;
+        
+        // Calcular el nivel de color de 1 a 4 basado en cuartiles
+        const ratio = commits / maxCommits;
+        if (ratio <= 0.25) return 1;
+        if (ratio <= 0.50) return 2;
+        if (ratio <= 0.75) return 3;
         return 4;
     }
 
@@ -131,9 +139,12 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
         const offsetX = (canvasSize - gridWidth) / 2;
         const offsetY = (canvasSize - gridHeight) / 2;
 
+        // Calcular el máximo de commits en el periodo
+        const maxCommits = Math.max(...weekData);
+
         // Usar tema seleccionado por el usuario
         const colors = Themes[theme];
-        console.log(`🎨 Generando heatmap con tema: ${theme}`);
+        console.log(`🎨 Generando heatmap con tema: ${theme} (max commits: ${maxCommits})`);
 
         const colorMap: { [key: number]: string } = {
         0: colors.level0,
@@ -151,7 +162,7 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
 
             for (let col = 0; col < currentRowData.length; col++) {
                 const commits = currentRowData[col];
-                const colorLevel = this.getColorLevel(commits);
+                const colorLevel = this.getColorLevel(commits, maxCommits);
 
                 const x = offsetX + col * (cellSize + gap);
                 const y = offsetY + row * (cellSize + gap);

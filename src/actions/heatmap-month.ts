@@ -99,11 +99,19 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
         await this.updateDisplay(action, monthData, theme);
     }
 
-    private getColorLevel(commits: number): number {
+    /**
+     * Calcula el nivel de color basado en el número de commits,
+     * relativo al máximo de commits en el periodo (estilo GitHub)
+     */
+    private getColorLevel(commits: number, maxCommits: number): number {
         if (commits === 0) return 0;
-        if (commits <= 3) return 1;
-        if (commits <= 6) return 2;
-        if (commits <= 9) return 3;
+        if (maxCommits === 0) return 0;
+        
+        // Calcular el nivel de color de 1 a 4 basado en cuartiles
+        const ratio = commits / maxCommits;
+        if (ratio <= 0.25) return 1;
+        if (ratio <= 0.50) return 2;
+        if (ratio <= 0.75) return 3;
         return 4;
     }
     private async updateDisplay(action: any, monthData: number[], theme: 'dark' | 'light'): Promise<void> {
@@ -123,9 +131,13 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
 
         const offsetX = (canvasSize - gridWidth) / 2;
         const offsetY = (canvasSize - gridHeight) / 2;
+        
+        // Calcular el máximo de commits en el periodo
+        const maxCommits = Math.max(...monthData);
+        
         // Usar tema seleccionado por el usuario
         const colors = Themes[theme];
-        console.log(`🎨 Generando heatmap con tema: ${theme}`);
+        console.log(`🎨 Generando heatmap con tema: ${theme} (max commits: ${maxCommits})`);
         const colorMap: { [key: number]: string } = {
             0: colors.level0,
             1: colors.level1,
@@ -140,7 +152,7 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
                 const index = row * cols + col;
                 if (index < monthData.length) {
                     const commits = monthData[index];
-                    const colorLevel = this.getColorLevel(commits);
+                    const colorLevel = this.getColorLevel(commits, maxCommits);
                     const x = offsetX + col * (cellSize + gap);
                     const y = offsetY + row * (cellSize + gap);
                     const color = colorMap[colorLevel];
