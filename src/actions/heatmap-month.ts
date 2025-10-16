@@ -45,7 +45,7 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
         console.log("🔴 HeatmapMonth: Botón desapareció");
         this.stopAutoUpdate();
     }
-        override async onKeyDown(ev: KeyDownEvent<HeatmapSettings>): Promise<void> {
+    override async onKeyDown(ev: KeyDownEvent<HeatmapSettings>): Promise<void> {
         console.log("🔵 HeatmapMonth: Botón presionado");
 
         try {
@@ -99,16 +99,18 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
         await this.updateDisplay(action, monthData, theme);
     }
 
-    private getColorLevel(commits: number): number {
+    // Color level estilo GitHub (basado en el máximo de commits)
+    private getGitHubColorLevel(commits: number, maxCommits: number): number {
         if (commits === 0) return 0;
-        if (commits <= 3) return 1;
-        if (commits <= 6) return 2;
-        if (commits <= 9) return 3;
+        if (commits <= Math.ceil(maxCommits * 0.25)) return 1;
+        if (commits <= Math.ceil(maxCommits * 0.5)) return 2;
+        if (commits <= Math.ceil(maxCommits * 0.75)) return 3;
         return 4;
     }
+
     private async updateDisplay(action: any, monthData: number[], theme: 'dark' | 'light'): Promise<void> {
-            const imageData = this.generateHeatmapImage(monthData, theme);
-            await action.setImage(imageData);
+        const imageData = this.generateHeatmapImage(monthData, theme);
+        await action.setImage(imageData);
     }
 
     private generateHeatmapImage(monthData: number[], theme: 'dark' | 'light'): string {
@@ -133,6 +135,9 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
             3: colors.level3,
             4: colors.level4,
         };
+
+        const maxCommits = Math.max(...monthData);
+
         let svg = `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
             <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}" rx="8"/>`;
         for (let row = 0; row < rows; row++) {
@@ -140,7 +145,7 @@ export class HeatmapMonth extends SingletonAction<HeatmapSettings> {
                 const index = row * cols + col;
                 if (index < monthData.length) {
                     const commits = monthData[index];
-                    const colorLevel = this.getColorLevel(commits);
+                    const colorLevel = this.getGitHubColorLevel(commits, maxCommits);
                     const x = offsetX + col * (cellSize + gap);
                     const y = offsetY + row * (cellSize + gap);
                     const color = colorMap[colorLevel];

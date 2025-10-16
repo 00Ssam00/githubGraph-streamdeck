@@ -12,10 +12,11 @@ import { Themes } from "../config/themes";
 import { HeatmapSettings, defaultSettings } from "../types/settings";
 
 @action({ UUID: "com.ssam00.githubgraph.week" })
-    export class HeatmapWeek extends SingletonAction<HeatmapSettings> {
+export class HeatmapWeek extends SingletonAction<HeatmapSettings> {
     private githubService: GitHubService;
     private updateInterval: NodeJS.Timeout | null = null;
     private readonly UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
+
     constructor() {
         super();
         const GITHUB_TOKEN = Config.githubToken;
@@ -64,10 +65,10 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
         console.log("🎨 Settings actualizados - Aplicando cambios automáticamente");
         console.log("📝 Nuevo tema:", newTheme);
         try {
-        await this.fetchAndUpdate(ev.action, newTheme);
-        console.log("✅ Tema aplicado correctamente");
+            await this.fetchAndUpdate(ev.action, newTheme);
+            console.log("✅ Tema aplicado correctamente");
         } catch (error) {
-        console.error("❌ Error al aplicar nuevo tema:", error);
+            console.error("❌ Error al aplicar nuevo tema:", error);
         }
     }
 
@@ -101,11 +102,13 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
         const weekData = await this.githubService.getLastWeekCommits();
         await this.updateDisplay(action, weekData, theme);
     }
-    private getColorLevel(commits: number): number {
+
+    // Color level estilo GitHub (basado en el máximo de commits)
+    private getGitHubColorLevel(commits: number, maxCommits: number): number {
         if (commits === 0) return 0;
-        if (commits <= 2) return 1;
-        if (commits <= 4) return 2;
-        if (commits <= 7) return 3;
+        if (commits <= Math.ceil(maxCommits * 0.25)) return 1;
+        if (commits <= Math.ceil(maxCommits * 0.5)) return 2;
+        if (commits <= Math.ceil(maxCommits * 0.75)) return 3;
         return 4;
     }
 
@@ -136,12 +139,14 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
         console.log(`🎨 Generando heatmap con tema: ${theme}`);
 
         const colorMap: { [key: number]: string } = {
-        0: colors.level0,
-        1: colors.level1,
-        2: colors.level2,
-        3: colors.level3,
-        4: colors.level4,
+            0: colors.level0,
+            1: colors.level1,
+            2: colors.level2,
+            3: colors.level3,
+            4: colors.level4,
         };
+
+        const maxCommits = Math.max(...weekData);
 
         let svg = `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${canvasSize}" height="${canvasSize}" fill="${colors.background}" rx="8"/>`;
@@ -151,7 +156,7 @@ import { HeatmapSettings, defaultSettings } from "../types/settings";
 
             for (let col = 0; col < currentRowData.length; col++) {
                 const commits = currentRowData[col];
-                const colorLevel = this.getColorLevel(commits);
+                const colorLevel = this.getGitHubColorLevel(commits, maxCommits);
 
                 const x = offsetX + col * (cellSize + gap);
                 const y = offsetY + row * (cellSize + gap);
